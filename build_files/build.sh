@@ -1,24 +1,64 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-set -ouex pipefail
+set ${SET_X:+-x} -eou pipefail
 
-### Install packages
+trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 
-# Packages can be installed from any enabled yum repo on the image.
-# RPMfusion repos are available by default in ublue main images
-# List of rpmfusion packages can be found here:
-# https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
+log() {
+  echo "=== $* ==="
+}
 
-# this installs a package from fedora repos
-dnf5 install -y tmux 
+log "Installing RPM packages"
 
-# Use a COPR Example:
+#log "Enable Copr repos"
 #
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+#COPR_REPOS=(
+#    pgdev/ghostty
+#)
+#for repo in "${COPR_REPOS[@]}"; do
+#    dnf5 -y copr enable "$repo"
+#done
 
-#### Example for enabling a System Unit File
+log "Enable repositories"
+# Bazzite disabled this for some reason so lets re-enable it again
+dnf5 config-manager setopt terra.enabled=1 terra-extras.enabled=1
 
-systemctl enable podman.socket
+log "Install layered applications"
+
+# Layered Applications
+LAYERED_PACKAGES=(
+    konsole
+    policycoreutils-gui
+    setroubleshoot
+    setools-gui
+    kjournald
+    kde-partitionmanager
+)
+dnf5 install --setopt=install_weak_deps=False -y "${LAYERED_PACKAGES[@]}"
+
+log "Disable Copr repos as we do not need it anymore"
+
+for repo in "${COPR_REPOS[@]}"; do
+    dnf5 -y copr disable "$repo"
+done
+# Use flatpak steam with some addons instead
+# rpm-ostree override remove steam
+log "Removing junk packages from Bazzite install"
+
+REMOVED_PACKAGES=(
+    ptyxis 
+    waydroid 
+    waydroid-selinux 
+    discover-overlay 
+    krfb 
+    krfb-libs 
+    xwaylandvideobridge 
+    plasma-discover-notifier 
+    vim-minimal 
+    kmousetool 
+    kwrite 
+    vim-enhanced 
+    icoutils 
+    filelight
+)
+dnf5 -y remove "${REMOVED_PACKAGES[@]}"
