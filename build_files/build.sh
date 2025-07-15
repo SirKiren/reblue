@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
-set ${SET_X:+-x} -eou pipefail
+#set ${SET_X:+-x} -eou pipefail
+set -ouex pipefail
 
 trap '[[ $BASH_COMMAND != echo* ]] && [[ $BASH_COMMAND != log* ]] && echo "+ $BASH_COMMAND"' DEBUG
 
